@@ -92,10 +92,11 @@ def conta_tempo():
 		if jogadores[jogador][0]==None:
 			print "Jogador ", jogador, "com entrada irregular", 'jogadores=', jogadores
 			del jogadores[jogador]
-		elif jogadores[jogador][1]==None:
-			print "Jogador ", jogador, "com entrada irregular", 'jogadores=', jogadores
-			del jogadores[jogador]
-
+		#<RR>
+		#elif jogadores[jogador][1]==None:
+		#	print "Jogador ", jogador, "com entrada irregular", 'jogadores=', jogadores
+		#	del jogadores[jogador]
+        #</RR>
 	if len(jogadores)<2:
 		print "tenho menos que 2 jogadores", jogadores
 		for jogador in jogadores:
@@ -105,9 +106,14 @@ def conta_tempo():
 			envios1.append(jogadores[jogador][1])		
 			s_envios1.release()
 			s_envios.release()
-		temp = jogadores.keys()[0]
-		temp = jogadores[temp]
-		temp[0].sendall("Jogador unico")
+
+		# <RR>
+		#Correcao #1
+		if len(jogadores)==1:
+		# </RR>
+			temp = jogadores.keys()[0]
+			temp = jogadores[temp]
+			temp[0].sendall("Jogador unico")
 		time.sleep(TS)
 		s_jogadores.release()
 		print 't1'
@@ -122,10 +128,14 @@ def conta_tempo():
 		jogadores[jogador][0].sendall("Comecou")
 		time.sleep(TS)
 		s_envios.acquire()
-		s_envios1.acquire()
+		# <RR>
+		#s_envios1.acquire()
+		# </RR>
 		envios.append(jogadores[jogador][0])
-		envios1.append(jogadores[jogador][1])
-		s_envios1.release()	
+		# <RR>
+		#envios1.append(jogadores[jogador][1])
+		#s_envios1.release()
+		# </RR>
 		s_envios.release()
 		s_organizacao.acquire()	
 		print '5 org =', organizacao	
@@ -153,7 +163,9 @@ def pares_iniciais(jogadores, jog):
 	global fim
 	if not fim:
 		s_jogadores.acquire()
-		sock = jogadores[jog][1]
+		# <RR> Correcao
+		sock = jogadores[jog][0]
+		# </RR>
 
 		cartas = jogadores[jog][2]
 		s_jogadores.release()
@@ -201,7 +213,9 @@ def sorteia_cartas(jogadores):
 		while len(baralho)>0:
 			sorteio = randrange(len(baralho))
 			s_jogadores.acquire()
-			jogadores[jog[i]][1].sendall('mao_carta/'+str(baralho[sorteio]))
+			# <RR> Correcao
+			jogadores[jog[i]][0].sendall('mao_carta/'+str(baralho[sorteio]))
+			# </RR>
 			time.sleep(TS)
 			jogadores[jog[i]][2].append(str(baralho[sorteio])) #Guardo que mandei essa carta para esse cliente
 			s_jogadores.release()
@@ -213,7 +227,9 @@ def sorteia_cartas(jogadores):
 			
 		s_jogadores.acquire()
 		for jog in jogadores:
-			jogadores[jog][1].sendall('Fim_mao')
+			# <RR>
+			jogadores[jog][0].sendall('Fim_mao')
+			# </RR>
 			print "Mandei fim_mao para ", jog
 		s_jogadores.release()
 		time.sleep(TS)
@@ -583,10 +599,13 @@ def aceita(conn):
 		conn.close()
 
 
-
-HOST = ''                 # Symbolic name meaning all available interfaces
-
+# <RR>
+HOST = '192.168.0.105'                 # Symbolic name meaning all available interfaces
+# </RR>
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #IPv4,tipo de socket
+# <RR>
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# </RR>
 s.bind((HOST, PORT)) #liga o socket com IP e porta
 jogadores = {}
 s_jogadores = BoundedSemaphore()
