@@ -111,6 +111,7 @@ def pares():
                 if not (envia_pares()):
                     break
 
+    print 'sobraram %d cartas' % len(cartas)
 
 try:
 
