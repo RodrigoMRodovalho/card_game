@@ -120,7 +120,7 @@ def conta_tempo():
 		termina_jogo()
 		return
 
-			
+
 			
 	lista = "Ordem/"
 	print "jogadores = ", jogadores
@@ -128,14 +128,10 @@ def conta_tempo():
 		jogadores[jogador][0].sendall("Comecou")
 		time.sleep(TS)
 		s_envios.acquire()
-		# <RR>
-		#s_envios1.acquire()
-		# </RR>
+		s_envios1.acquire()
 		envios.append(jogadores[jogador][0])
-		# <RR>
-		#envios1.append(jogadores[jogador][1])
-		#s_envios1.release()
-		# </RR>
+		envios1.append(jogadores[jogador][1])
+		s_envios1.release()
 		s_envios.release()
 		s_organizacao.acquire()	
 		print '5 org =', organizacao	
@@ -427,8 +423,10 @@ def envia(jogador):
 					con2 = jogadores[oponente][0]
 					pergunta = Thread(target=pergunta_ordem, args=(con2, jogadores, oponente))
 					s_jogadores.release()
-					pergunta.start()				
-					con.sendall('vez/'+str(numero)) 
+					pergunta.start()
+					#<RR>
+					con.sendall('quant_cartas/'+str(numero))
+					#</RR>
 					time.sleep(TS)
 					carta = con.recv(4096)
 					if not carta:
@@ -509,6 +507,10 @@ def envia(jogador):
 							vez = (vez +1) %len(organizacao)
 							print "vez vale", vez,'e organizacao vale', organizacao
 							envia_todos("vez", organizacao[vez])
+							#<RR>
+							jogador = organizacao[vez]
+							con = jogadores[jogador][0]
+							# </RR>
 							s_organizacao.release()
 							s_vez.release()
 								
@@ -543,9 +545,12 @@ def envia(jogador):
 
 def aceita(conn):
 	global jogadores, tempo, init, end_game,s_jogadores, s_fim , s_init
-	s_init.acquire()
-	if init :
-		s_init.release()
+	#<RR>
+	#s_init.acquire()
+	#if init :
+		#s_init.release()
+	if True:
+	#</RR> todo corrigir esse pedaco, receber o pedido /envio, depois de ter comecado, problema na variavel init
 		data = conn.recv(4096) #Recebe os dados 
 		valores = data.split('/') #Oi/Nome_usuario/envio_ou_recepcao
 		print 'valores=',valores
@@ -561,7 +566,9 @@ def aceita(conn):
 			print 'data vale ', data
 			conn.sendall("Pacote mal formado")
 			time.sleep(TS)
-		elif valores[1] in jogadores and jogadores[valores[1]][0] != None and jogadores[valores[1]][0]!=None: ###Jogador já existe e está confgurado
+		#<RR>
+		elif valores[1] in jogadores and jogadores[valores[1]][0] != None and jogadores[valores[1]][0]!=None and valores[2] == 'recepcao': ###Jogador já existe e está confgurado
+		#</RR>
 			print "recebi ", data , 'e jogadores=', jogadores, 'por isso escolha outro usuário'
 			conn.sendall("Escolha outro nome de usuário")
 			time.sleep(TS)
@@ -585,7 +592,16 @@ def aceita(conn):
 				return
 
 			else:
+				#<RR>
+				s_envios.acquire()
+				envios.remove(jogadores[valores[1]][0])
+				s_envios.release()
+				jogadores[valores[1]][0] = conn
+				#</RR>
 				jogadores[valores[1]][1] = conn
+				# <RR>
+				envios.append(conn)
+				# </RR>
 				print "Coloquei o envio de ", valores[1]
 				t = Thread(target= envia, args = (valores[1],))
 				t.start()
