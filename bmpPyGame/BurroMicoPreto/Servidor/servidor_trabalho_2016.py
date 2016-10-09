@@ -9,7 +9,7 @@ import linecache
 
 #Constantes:
 TEMPO_INIT = 20
-NUM_CARTAS = 11 ##13 pares + 1 burro
+NUM_CARTAS = 53 ##13 pares + 1 burro
 MAX_PLAYERS = 5
 PORT = 50053              # Arbitrary non-privileged port
 TS= 1
@@ -92,11 +92,11 @@ def conta_tempo():
 		if jogadores[jogador][0]==None:
 			print "Jogador ", jogador, "com entrada irregular", 'jogadores=', jogadores
 			del jogadores[jogador]
-		#MODIFICACAO - Dava problema na verificacao
+		#<RR>
 		#elif jogadores[jogador][1]==None:
 		#	print "Jogador ", jogador, "com entrada irregular", 'jogadores=', jogadores
 		#	del jogadores[jogador]
-
+        #</RR>
 	if len(jogadores)<2:
 		print "tenho menos que 2 jogadores", jogadores
 		for jogador in jogadores:
@@ -107,8 +107,10 @@ def conta_tempo():
 			s_envios1.release()
 			s_envios.release()
 
-		#MODIFICACAO - Adiciona verificacao do tamanho da lista
+		# <RR>
+		#Correcao #1
 		if len(jogadores)==1:
+		# </RR>
 			temp = jogadores.keys()[0]
 			temp = jogadores[temp]
 			temp[0].sendall("Jogador unico")
@@ -157,7 +159,7 @@ def pares_iniciais(jogadores, jog):
 	global fim
 	if not fim:
 		s_jogadores.acquire()
-		# MODIFICACAO, alteracao da posicao do socket
+		# <RR> Correcao
 		sock = jogadores[jog][0]
 		# </RR>
 
@@ -207,8 +209,9 @@ def sorteia_cartas(jogadores):
 		while len(baralho)>0:
 			sorteio = randrange(len(baralho))
 			s_jogadores.acquire()
-			# MODIFICACAO - Modificacao do indice do socket.
+			# <RR> Correcao
 			jogadores[jog[i]][0].sendall('mao_carta/'+str(baralho[sorteio]))
+			# </RR>
 			time.sleep(TS)
 			jogadores[jog[i]][2].append(str(baralho[sorteio])) #Guardo que mandei essa carta para esse cliente
 			s_jogadores.release()
@@ -220,8 +223,9 @@ def sorteia_cartas(jogadores):
 			
 		s_jogadores.acquire()
 		for jog in jogadores:
-			# MODIFICACAO - Modificacao do indice do socket.
+			# <RR>
 			jogadores[jog][0].sendall('Fim_mao')
+			# </RR>
 			print "Mandei fim_mao para ", jog
 		s_jogadores.release()
 		time.sleep(TS)
@@ -420,9 +424,9 @@ def envia(jogador):
 					pergunta = Thread(target=pergunta_ordem, args=(con2, jogadores, oponente))
 					s_jogadores.release()
 					pergunta.start()
-					#MODIFICACAO - vez e usado para outro contexto, foi
-					#alterado para quant_cartas
+					#<RR>
 					con.sendall('quant_cartas/'+str(numero))
+					#</RR>
 					time.sleep(TS)
 					carta = con.recv(4096)
 					if not carta:
@@ -503,9 +507,10 @@ def envia(jogador):
 							vez = (vez +1) %len(organizacao)
 							print "vez vale", vez,'e organizacao vale', organizacao
 							envia_todos("vez", organizacao[vez])
-							#MODIFICACAO - atualiza informacoes do jogador como nome e socket de comunicacao
+							#<RR>
 							jogador = organizacao[vez]
 							con = jogadores[jogador][0]
+							# </RR>
 							s_organizacao.release()
 							s_vez.release()
 								
@@ -540,8 +545,12 @@ def envia(jogador):
 
 def aceita(conn):
 	global jogadores, tempo, init, end_game,s_jogadores, s_fim , s_init
-	#MODIFICACAO - Com o codigo anterior, o jogo nao recebia o pedido 'Oi/jogador/Envio', foi o jeito pra fazer funcionar
+	#<RR>
+	#s_init.acquire()
+	#if init :
+		#s_init.release()
 	if True:
+	#</RR> todo corrigir esse pedaco, receber o pedido /envio, depois de ter comecado, problema na variavel init
 		data = conn.recv(4096) #Recebe os dados 
 		valores = data.split('/') #Oi/Nome_usuario/envio_ou_recepcao
 		print 'valores=',valores
@@ -557,8 +566,9 @@ def aceita(conn):
 			print 'data vale ', data
 			conn.sendall("Pacote mal formado")
 			time.sleep(TS)
-		# MODIFICACAO - verifica se foi recepcao
+		#<RR>
 		elif valores[1] in jogadores and jogadores[valores[1]][0] != None and jogadores[valores[1]][0]!=None and valores[2] == 'recepcao': ###Jogador já existe e está confgurado
+		#</RR>
 			print "recebi ", data , 'e jogadores=', jogadores, 'por isso escolha outro usuário'
 			conn.sendall("Escolha outro nome de usuário")
 			time.sleep(TS)
@@ -582,14 +592,16 @@ def aceita(conn):
 				return
 
 			else:
-				#MODIFICACAO - atualiza socket
+				#<RR>
 				s_envios.acquire()
 				envios.remove(jogadores[valores[1]][0])
 				s_envios.release()
 				jogadores[valores[1]][0] = conn
+				#</RR>
 				jogadores[valores[1]][1] = conn
-				# MODIFICACAO - Insere socket novo
+				# <RR>
 				envios.append(conn)
+				# </RR>
 				print "Coloquei o envio de ", valores[1]
 				t = Thread(target= envia, args = (valores[1],))
 				t.start()
@@ -603,10 +615,13 @@ def aceita(conn):
 		conn.close()
 
 
-
-HOST = ''                 # Symbolic name meaning all available interfaces
+# <RR>
+HOST = '192.168.0.105'                 # Symbolic name meaning all available interfaces
+# </RR>
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #IPv4,tipo de socket
+# <RR>
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# </RR>
 s.bind((HOST, PORT)) #liga o socket com IP e porta
 jogadores = {}
 s_jogadores = BoundedSemaphore()
